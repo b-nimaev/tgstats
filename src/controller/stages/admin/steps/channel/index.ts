@@ -1,24 +1,66 @@
-import { Composer, Markup } from "telegraf"
+import { Composer, Markup, Scenes } from "telegraf"
+import { insertOrUpdate, channels as list } from "../../../../.."
 import { context } from "../../../../../utils/context"
 
-var greetingChannel = `Секция: Каналы`,
-    markupChannel = [
-        [
-            Markup.button.callback('Добавить канал', 'appendChannel'),
-            Markup.button.callback('🏠 Домой', 'home')
-        ]
-    ]
+const greeting = async function (ctx: context) {
+    let greeting = `Секция: Каналы\n`,
+        keyboard = await list(ctx)
 
+    if (typeof (ctx.update['callback_query']) !== 'undefined') {
+        await ctx.editMessageText(greeting, keyboard)
+        return ctx.answerCbQuery()
+    } else {
+        return await ctx.reply(greeting, keyboard)
+    }
+}
 
-// export const main = async (ctx: context) => { }
-export const main = new Composer<context>()
-main.on('message', async (ctx) => {
-    await ctx.reply(greetingChannel, Markup.inlineKeyboard(markupChannel))
+let channels = new Composer<context>()
+let createc = new Composer<context>()
+let createl = new Composer<context>()
+
+const wizard = new Scenes.WizardScene('channels',
+    channels,
+    createc,
+    createl
+)
+
+let back = Markup.inlineKeyboard([
+    Markup.button.callback('Назад', 'back')
+])
+
+wizard.enter(async (ctx: context) => greeting (ctx))
+wizard.action('newchannel', async (ctx) => {
+    return await ctx.editMessageText('Отправьте ссылку на канал в формате @channelusername').then(() => {
+        return ctx.wizard.selectStep(1)
+    })
 })
 
-main.action('appendChannel', async (ctx) => {
-    await ctx.wizard.selectStep(2)
+wizard.action('home', async (ctx) => ctx.scene.enter('home'))
+createc.on('message', async (ctx: context) => {
+    await ctx.telegram.getChatMember(ctx.update['message'].text, ctx.botInfo.id).then(async (value) => {
+        if (value['can_invite_users']) {
+            let invite = await ctx.telegram.createChatInviteLink(ctx.update['message'].text, { name: 'test' })
+            console.log(invite)
+            ctx.session.channel = await ctx.telegram.getChat(ctx.update['message'].text)
+            await ctx.reply('У вас есть права приглашать участников . . .').then(async (value) => {
+                await ctx.telegram.editMessageText(value.chat.id, value.message_id, `${value.message_id}`, 'Проверка базы данных').then(async value => {
+                    if (typeof (value) !== 'boolean') {
+                        await insertOrUpdate(ctx, value)
+                    }
+                })
+            })
+        } else {
+            await ctx.reply('У меня нет прав приглашать участников на этот канал ', back)
+        }
+    }, async (err) => {
+        return await ctx.reply(err.response.description, back)
+    })
 })
 
-export const create = async (ctx: context) => { }
-export const channel = async (ctx: context) => { }
+createc.action('back', async (ctx) => {
+    ctx.answerCbQuery()
+    ctx.wizard.selectStep(0)
+    return greeting(ctx)
+})
+
+export default wizard

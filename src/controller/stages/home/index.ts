@@ -2,30 +2,11 @@ import { Composer, Markup, Scenes } from "telegraf"
 import { is_user, new_admin, participant, send_connect } from '../../../index'
 import { context } from "../../../utils/context"
 
-const greeting = `Главная страница\n`
 
-// Hanlder
 const handler = new Composer<context>()
-handler.action('login', async (ctx) => {
-    ctx.answerCbQuery()
-    /* 
-        1. У вас нет доступа. Свяжитесь с админом - @alexandrbnimaev
-    */
-    if (await is_user(ctx)) {
-        await ctx.scene.enter('user')
-    }
-})
 
-// WizardScene
-const home = new Scenes.WizardScene('home', handler
-)
-
-// Scene Callbacks
-home.enter(async (ctx) => {
-    await ctx.reply('Приветствую')
-})
-
-home.start(async (ctx: context) => {
+async function greeting (ctx: context) {
+    let greeting = `Главная страница\n`
     switch (await participant(ctx)) {
         case 'admin':
             ctx.scene.enter('admin');
@@ -38,6 +19,17 @@ home.start(async (ctx: context) => {
                 Markup.button.callback('Зарегистрироваться', 'register')
             ]))
     }
+}
+
+// WizardScene
+const home = new Scenes.WizardScene('home', handler)
+
+// Scene Callbacks
+home.enter(async (ctx) => {
+    greeting(ctx)
+})
+home.start(async (ctx: context) => {
+
 })
 
 home.leave(async (ctx) => {
@@ -53,13 +45,16 @@ home.action('register', async (ctx) => {
     await send_connect(ctx)
 })
 
-home.on('message', async (ctx) => {
-    await ctx.deleteMessage(ctx.update['message'].message_id-1).then(() => {
-        ctx.reply(greeting, Markup.inlineKeyboard([
-            Markup.button.callback('Зарегистрироваться', 'register')
-        ]))
-    })
+
+home.action('login', async (ctx) => {
+    ctx.answerCbQuery()
+    if (await is_user(ctx)) {
+        await ctx.scene.enter('user')
+    }
 })
 
-// Module export
+
+home.on('message', async (ctx) => greeting(ctx))
+
+
 export default home

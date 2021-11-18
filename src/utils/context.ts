@@ -1,4 +1,5 @@
 import { Context, Scenes } from "telegraf";
+import { Chat, Update } from "typegram";
 
 interface MyWizardSession extends Scenes.WizardSessionData {
     // will be available under `ctx.scene.session.myWizardSessionProp`
@@ -7,12 +8,14 @@ interface MyWizardSession extends Scenes.WizardSessionData {
 
 interface MySession extends Scenes.WizardSession<MyWizardSession> {
     // will be available under `ctx.session.mySessionProp`
-    mySessionProp: number
+    mySessionProp: number,
+    channel: Chat.GetChat
 }
 
 export interface context extends Context {
+    ctx: Scenes.BaseScene<context>;
     // will be available under `ctx.myContextProp`
-    myContextProp: string
+    prevWizard: Scenes.SceneContextScene<context, MyWizardSession>
     // declare session type
     session: MySession
     // declare scene type

@@ -1,36 +1,63 @@
-import { Context, Markup, Scenes } from "telegraf"
+import { Composer, Context, Markup, Scenes } from "telegraf"
 import { context } from "../../../utils/context"
-import { handler } from './handler'
 
-import { main as home, create, channel as single } from './steps/channel'
-let greeting = `Приветствую\n`,
-    keyboard = Markup.inlineKeyboard([
-        Markup.button.callback('Каналы', 'channels'),
-        Markup.button.callback('Менеджеры', 'managers'),
-        Markup.button.callback('Статистика', 'stats')
-    ])
+
+import channel from './steps/channel'
+import manager from './steps/managers'
+
+let greeting = async function (ctx: context) {
+    let text = `Главная\n`,
+        keyboard = Markup.inlineKeyboard([
+            [
+                Markup.button.callback('Каналы', 'channels')
+            ],
+            [
+                Markup.button.callback('Менеджеры', 'managers'),
+                Markup.button.callback('Статистика', 'stats')
+            ]
+        ])
+
+    if (typeof (ctx.update['message']) !== 'undefined') {
+        await ctx.reply(text, keyboard)
+    } else {
+        await ctx.editMessageText(text, keyboard)
+        ctx.wizard.selectStep(0)
+        try {
+            return ctx.answerCbQuery()
+        } catch (err) {
+            return console.log(err)
+        }
+    }
+}
+
+let handler = new Composer<context>()
 
 
 // WizardScene
-const admin = new Scenes.WizardScene('admin', handler, home, create, single)
+const admin = new Scenes.WizardScene('admin', handler)
 
-admin.enter(async (ctx: Context) => {
-    if (ctx.update['message'].text == '/start' || ctx.update['message'].text == '/callmeadmin') {
-        await ctx.reply(greeting, keyboard)
-    } else {
-        await ctx.editMessageText(greeting, keyboard)
-    }
+admin.enter(async (ctx: context) => greeting(ctx))
+admin.leave(async (ctx) => {
+    ctx.prevWizard = ctx.scene
 })
 
-admin.action('home', async (ctx: context) => {
+admin.command('newchannel', async (ctx) => {
+    Promise.all([
+        await ctx.reply('Отправьте ссылку на канал в формате @channelusername'),
+    ]).then(() => {
+        ctx.wizard.selectStep(2)
+    })
+})
+
+
+admin.action('managers', async (ctx) => {
+    ctx.scene.enter('managers')
     ctx.answerCbQuery()
-    ctx.editMessageText(greeting, keyboard)
-    ctx.wizard.selectStep(0)
+})
+admin.action('channels', async (ctx) => {
+    ctx.scene.enter('channels')
+    ctx.answerCbQuery()
 })
 
-admin.command('home', async (ctx) => {
-    await ctx.reply(greeting, keyboard)
-})
-
-// Module export
+export { channel, manager }
 export default admin

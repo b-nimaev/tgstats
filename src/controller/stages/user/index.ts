@@ -6,7 +6,4 @@ import { context } from "../../../utils/context"
 const handler = new Composer<context>()
 
 // WizardScene
-const user = new Scenes.WizardScene('user', handler)
-
-// Module export
-export default user
+export const user = new Scenes.WizardScene('user', handler)

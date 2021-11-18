@@ -4,8 +4,8 @@ import express from 'express'
 const app = express()
 
 // Телеграф
-import { Context, session } from 'telegraf'
-import { Telegraf, Scenes, Markup, Composer } from 'telegraf'
+import { session } from 'telegraf'
+import { Telegraf, Markup, } from 'telegraf'
 import { context } from "./utils/context"
 
 // Логика
@@ -13,7 +13,8 @@ import { context } from "./utils/context"
 
 // Переменные окружения
 import * as dotenv from 'dotenv'
-import { controller } from './controller'
+import controller from './controller'
+import { Update, Message } from 'typegram'
 
 dotenv.config();
 
@@ -24,34 +25,70 @@ let bot_id = 1031007063,
 const { MongoClient } = require("mongodb");
 const client = new MongoClient(uri);
 
-export let channels = async function (ctx: context) {
-    let greeting = `Секция: Каналы`
+let back = Markup.inlineKeyboard([
+    Markup.button.callback('Назад', 'back')
+])
 
+
+async function channels (ctx: context) {
     await client.connect()
     let documents = await client.db("tgstats").collection("channels").find()
+    let cursor = await documents.toArray()
     let count = await documents.count()
     await client.close()
     
-    if (count == 0) {    
-        return false
-    } else {
-        var keyboard: any = {
-            'reply_markup': {
-                'inline_keyboard': []
-            }
+    var keyboard: any = {
+        'reply_markup': {
+            'inline_keyboard': []
         }
-        documents.toArray().forEach(async (element: any) => {
+    }
+
+    if (count) {
+        for (let index = 0; index < cursor.length; index++) {
             keyboard.reply_markup.inline_keyboard.push([{
-                text: element.title,
-                callback_data: 'link' + element.id,
+                text: cursor[index].title,
+                callback_data: 'link' + cursor[index].id,
                 hide: false
             }])
-        })
-        return await ctx.editMessageText(greeting, keyboard)
+        }
     }
+
+    keyboard.reply_markup.inline_keyboard.push([
+        {
+            text: 'Добавить канал',
+            callback_data: 'newchannel'
+        },
+        {
+            text: '🏠 Домой',
+            callback_data: 'home'
+        }
+    ])
+    return keyboard
 }
 
-export let new_admin = async function (ctx: context) {
+let insertOrUpdate = async function (ctx: context, value: (Update.Edited & Message.TextMessage)) {
+    await client.connect()
+    console.log(ctx.session.channel)
+
+    let collection  =   await client.db("tgstats").collection("channels")
+    let result      =   await collection.findOne({
+                            id: ctx.session.channel['id']
+                        })
+
+    if (!result) {
+        return await collection.insertOne(ctx.session.channel).then(async () => {
+            await client.close()
+            await ctx.telegram.editMessageText(value.chat.id, value.message_id, `${value.message_id}`, 'Канал добавлен', { ...back })
+        }).catch(async (err) => {
+            await ctx.telegram.editMessageText(value.chat.id, value.message_id, `${value.message_id}`, 'Непредвиденная ошибка', { ...back })
+        })
+    }
+
+    await client.close()
+    return await ctx.telegram.editMessageText(value.chat.id, value.message_id, `${value.message_id}`, 'Канал существует', { ...back })
+}
+
+let new_admin = async function (ctx: context) {
     await client.connect()
     
     if (!await client.db("tgstats").collection("admins").find({ id: ctx.update['message'].from.id }).count()) {
@@ -64,75 +101,88 @@ export let new_admin = async function (ctx: context) {
     }
 }
 
-export let is_user = async function (ctx: context) {
-
-    // let update = null
-    var value: string    
-    if (ctx.update['callback_query']) {
-        value = 'callback_query'        
-    } else {
-        value = 'message'
-    }
+let is_user = async function (ctx: context) {
 
     await client.connect()
-    let collection  = await client.db("tgstats").collection("users"),
-        document      = await collection.findOne({id: ctx.update[`${value}`].from.id})        
+    let collection      = await client.db("tgstats").collection("users"),
+        document        = await collection.findOne({id: ctx.update['message'].from.id})        
 
     await client.close()
-
-    if (document) {
-        if (document.trust) {
-            return true
-        } else {
-            return false
-        }
+    if (document.trust) {
+        return document
+    } else {
+        return null
     }
-
-    return false
 }
 
-export let send_connect = async function (ctx: context) {
+let send_connect = async function (ctx: context) {
     
     await client.connect()
 
     let collection      = await client.db("tgstats").collection("users"),
-        document        = await collection.findOne({ id: ctx.update['callback_query'].from.id })
+        document        = await collection.findOne({ id: ctx.update['from'].id })
 
     await client.close()
-    
-    if (await is_user(ctx)) {
+    await is_user(ctx).then(async data => {
         ctx.answerCbQuery()
-        return ctx.scene.enter('user')
-    }
+        ctx.scene.enter('user')
+    })
 
-    if (document) {
-        return ctx.answerCbQuery('Ваша заявка у админа')
-    }
 
     let insert      = ctx.update['callback_query'].from
     insert.trust    = false
+
     await collection.insertOne(insert).then(async (res: any) => {
-        ctx.answerCbQuery(res)
         await client.close()
+        await ctx.answerCbQuery(res)
+    }).catch(async (err) => {
+        console.log(err)
+        await ctx.answerCbQuery(err.discription)
     })
     return true
 }
 
-export let participant = async function (ctx: context) {
-    await client.connect();
-    let db = await client.db("tgstats"),
-        admin_collection = db.collection("admins"),
-        is_admin = await admin_collection.find({ id: ctx.update['message'].from.id }).count()
+let participant = async function (ctx: context) {
 
-    await client.close()
-    
-    if (is_admin) {
-        return 'admin'
-    } else if (await is_user(ctx)) {
-        return 'user'
-    } else {
+    await client.connect()
+    let db      = await client.db("tgstats"),
+        admin   = db.collection("admins"),
+        user    = db.collection("users")
+
+    if (typeof(ctx.update['message']) !== 'undefined') {
+
+        let document    = await admin.findOne({ id: ctx.update['message'].from.id })
+
+        if ( document ) {
+            return 'admin'
+        } else {
+            let document = await user.findOne({ id: ctx.update['message'].from.id })
+
+            if (document) {
+                return 'user'
+            }
+
+            return false
+        }
+    }
+
+    if (typeof(ctx.update['callback_query'])) {
+
+        let foo = await admin.findOne({ id: ctx.update['callback_query'].message.from.id }),
+            bar = await user.findOne({ id: ctx.update['callback_query'].message.from.id })
+        
+        if (foo) {
+            return 'admin'
+        }
+
+        if (bar) {
+            return 'user'
+        }
+
         return false
     }
+
+    return undefined
 }
 
 if (token === undefined) {
@@ -142,7 +192,7 @@ if (token === undefined) {
 const bot = new Telegraf<context>(token)
 bot.use(session())
 bot.use(controller.middleware())
-const secretPath = `/secret-path/${bot.secretPathComponent()}`;
+const secretPath = `/path/${bot.secretPathComponent()}`;
 if (process.env.mode === "development") {
     localtnl.getTunnel().then(url => {
         bot.telegram.setWebhook(`${url}${secretPath}`)
@@ -154,3 +204,5 @@ app.use(bot.webhookCallback(secretPath))
 app.listen(80, () => {
     console.log('Example app listening on port 80!')
 })
+
+export { participant, channels, insertOrUpdate, new_admin, is_user, send_connect }
