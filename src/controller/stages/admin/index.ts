@@ -37,9 +37,6 @@ let handler = new Composer<context>()
 const admin = new Scenes.WizardScene('admin', handler)
 
 admin.enter(async (ctx: context) => greeting(ctx))
-admin.leave(async (ctx) => {
-    ctx.prevWizard = ctx.scene
-})
 
 admin.command('newchannel', async (ctx) => {
     Promise.all([
@@ -49,7 +46,6 @@ admin.command('newchannel', async (ctx) => {
     })
 })
 
-
 admin.action('managers', async (ctx) => {
     ctx.scene.enter('managers')
     ctx.answerCbQuery()
@@ -57,6 +53,12 @@ admin.action('managers', async (ctx) => {
 admin.action('channels', async (ctx) => {
     ctx.scene.enter('channels')
     ctx.answerCbQuery()
+})
+admin.action('stats', async (ctx) => {
+    ctx.answerCbQuery('Заявка отправлена!')
+})
+admin.on('message', async (ctx) => {
+    return await greeting(ctx)
 })
 
 export { channel, manager }

@@ -1,42 +1,38 @@
-import { Composer, Markup, Scenes } from "telegraf"
+import { Markup, Composer, Scenes } from "telegraf"
 import { context } from "../../../../../utils/context"
 
+import inbox from './inbox'
+import greeting from './greeting'
+
+
+
 let handler = new Composer<context>()
-const manager = new Scenes.WizardScene('managers', handler)
+let inner = new Composer<context>()
 
-const greeting = async function (ctx: context) {
-    let greeting = `Секция: Менеджеры \n`,
-        keyboard = Markup.inlineKeyboard([
-            [
-                Markup.button.callback('Входящие', 'inbox')
-            ],
-            [
-                Markup.button.callback('Добавить менеджера', 'newmanager'),
-                Markup.button.callback('Статистика', 'stats'),
-                Markup.button.callback('🏠 Домой', 'home')
-            ],
-        ])
-
-    if (typeof (ctx.update['callback_query']) !== 'undefined') {
-        await ctx.editMessageText(greeting, keyboard)
-        return ctx.answerCbQuery()
-    } else {
-        return await ctx.reply(greeting, keyboard)
+let invite = async function (ctx) {
+    if (ctx.update['message'].text) {
+        return ctx.reply(ctx.update['message'].text)
     }
+    return await ctx.reply('Отправьте ссылку на пользователя в формате @username', Markup.inlineKeyboard([Markup.button.callback('Назад', 'back')]))
 }
 
+let single = new Composer<context>()
+
+const manager = new Scenes.WizardScene('managers', handler, inner, invite, single)
+
+handler.on('message', async (ctx) => await greeting(ctx))
 manager.enter(async (ctx: context) => await greeting (ctx))
 
-manager.action('inbox', async (ctx: context) => {
-    await ctx.editMessageText('Входящие')
+manager.action('inbox', async (ctx: context) => { await inbox(ctx).then((data) => { return ctx.wizard.selectStep(1) }) })
+manager.action('back', async (ctx: context) => { 
+    await greeting(ctx)
     await ctx.answerCbQuery()
-    ctx.wizard.next()
+    return await ctx.wizard.selectStep(0)
 })
-
 manager.action('newmanager', async (ctx: context) => {
-    await ctx.editMessageText('Отправьте ссылку на пользователя в формате @username')
+    await ctx.editMessageText('Отправьте ссылку на пользователя в формате @username', Markup.inlineKeyboard([ Markup.button.callback('Назад', 'back') ]))
     await ctx.answerCbQuery()
-    ctx.wizard.next()
+    ctx.wizard.selectStep(2)
 })
 
 manager.action('home', async (ctx: context) => {
@@ -44,6 +40,14 @@ manager.action('home', async (ctx: context) => {
     await ctx.answerCbQuery()
 })
 
-manager.on('message', async (ctx: context) => await greeting(ctx))
+manager.action('stats', async (ctx) => {
+    await ctx.answerCbQuery('Заявка отправлена!')
+})
 
+inner.on('message', async (ctx) => await inbox(ctx))
+inner.action('back', async (ctx) => {
+    await ctx.answerCbQuery()
+    await ctx.wizard.selectStep(0)
+    return await greeting(ctx)
+})
 export default manager

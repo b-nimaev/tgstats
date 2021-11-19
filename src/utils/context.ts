@@ -15,7 +15,7 @@ interface MySession extends Scenes.WizardSession<MyWizardSession> {
 export interface context extends Context {
     ctx: Scenes.BaseScene<context>;
     // will be available under `ctx.myContextProp`
-    prevWizard: Scenes.SceneContextScene<context, MyWizardSession>
+    prevWizard: string | undefined
     // declare session type
     session: MySession
     // declare scene type

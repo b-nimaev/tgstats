@@ -1,12 +1,14 @@
 import { Composer, Markup, Scenes } from "telegraf"
-import { is_user, new_admin, participant, send_connect } from '../../../index'
+import { is_user, new_admin, participant } from '../../../index'
 import { context } from "../../../utils/context"
+import register from "./register"
 
 
 const handler = new Composer<context>()
 
 async function greeting (ctx: context) {
     let greeting = `Главная страница\n`
+    console.log(await participant(ctx))
     switch (await participant(ctx)) {
         case 'admin':
             ctx.scene.enter('admin');
@@ -26,10 +28,13 @@ const home = new Scenes.WizardScene('home', handler)
 
 // Scene Callbacks
 home.enter(async (ctx) => {
-    greeting(ctx)
+    if (ctx.prevWizard == 'channels') {
+        ctx.scene.enter('admin')
+    }
 })
-home.start(async (ctx: context) => {
 
+home.start(async (ctx: context) => {
+    greeting(ctx)
 })
 
 home.leave(async (ctx) => {
@@ -41,20 +46,15 @@ home.command('/callmeadmin', async (ctx) => {
     await ctx.scene.enter('admin')
 })
 
-home.action('register', async (ctx) => {
-    await send_connect(ctx)
-})
-
-
 home.action('login', async (ctx) => {
     ctx.answerCbQuery()
     if (await is_user(ctx)) {
         await ctx.scene.enter('user')
     }
 })
-
-
+home.action('register', async (ctx) => {
+    ctx.answerCbQuery('Заявка отправлена')
+    await register(ctx)
+})
 home.on('message', async (ctx) => greeting(ctx))
-
-
 export default home

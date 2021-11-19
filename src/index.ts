@@ -66,26 +66,27 @@ async function channels (ctx: context) {
     return keyboard
 }
 
-let insertOrUpdate = async function (ctx: context, value: (Update.Edited & Message.TextMessage)) {
+let insertOrUpdate = async function (ctx: context) {
     await client.connect()
     console.log(ctx.session.channel)
 
     let collection  =   await client.db("tgstats").collection("channels")
-    let result      =   await collection.findOne({
-                            id: ctx.session.channel['id']
-                        })
+    let result      =   await collection.findOne({ id: ctx.session.channel['id'] })
+
+    let message = ctx.update['message'],
+        message_id = message.message_id
 
     if (!result) {
         return await collection.insertOne(ctx.session.channel).then(async () => {
             await client.close()
-            await ctx.telegram.editMessageText(value.chat.id, value.message_id, `${value.message_id}`, 'Канал добавлен', { ...back })
+            await ctx.telegram.editMessageText(message.chat.id, message_id, `${message_id}`, 'Канал добавлен', { ...back })
         }).catch(async (err) => {
-            await ctx.telegram.editMessageText(value.chat.id, value.message_id, `${value.message_id}`, 'Непредвиденная ошибка', { ...back })
+            await ctx.telegram.editMessageText(message.chat.id, message_id, `${message_id}`, 'Непредвиденная ошибка', { ...back })
         })
     }
 
     await client.close()
-    return await ctx.telegram.editMessageText(value.chat.id, value.message_id, `${value.message_id}`, 'Канал существует', { ...back })
+    return await ctx.telegram.editMessageText(message.chat.id, message_id, `${message_id}`, 'Канал существует', { ...back })
 }
 
 let new_admin = async function (ctx: context) {
@@ -115,31 +116,14 @@ let is_user = async function (ctx: context) {
     }
 }
 
-let send_connect = async function (ctx: context) {
-    
-    await client.connect()
+let inbox = async function () {
 
-    let collection      = await client.db("tgstats").collection("users"),
-        document        = await collection.findOne({ id: ctx.update['from'].id })
+    await client.connect()
+    let collection = await client.db("tgstats").collection("users"),
+        document = await collection.find({ trust: false }).toArray()
 
     await client.close()
-    await is_user(ctx).then(async data => {
-        ctx.answerCbQuery()
-        ctx.scene.enter('user')
-    })
-
-
-    let insert      = ctx.update['callback_query'].from
-    insert.trust    = false
-
-    await collection.insertOne(insert).then(async (res: any) => {
-        await client.close()
-        await ctx.answerCbQuery(res)
-    }).catch(async (err) => {
-        console.log(err)
-        await ctx.answerCbQuery(err.discription)
-    })
-    return true
+    return document
 }
 
 let participant = async function (ctx: context) {
@@ -149,40 +133,27 @@ let participant = async function (ctx: context) {
         admin   = db.collection("admins"),
         user    = db.collection("users")
 
-    if (typeof(ctx.update['message']) !== 'undefined') {
-
-        let document    = await admin.findOne({ id: ctx.update['message'].from.id })
-
-        if ( document ) {
-            return 'admin'
-        } else {
-            let document = await user.findOne({ id: ctx.update['message'].from.id })
-
-            if (document) {
-                return 'user'
-            }
-
-            return false
-        }
+    try {
+        var update = await ctx.update['message']
+    } catch (err) {
+        var update = await ctx.update['callback_query'].message
     }
 
-    if (typeof(ctx.update['callback_query'])) {
-
-        let foo = await admin.findOne({ id: ctx.update['callback_query'].message.from.id }),
-            bar = await user.findOne({ id: ctx.update['callback_query'].message.from.id })
-        
-        if (foo) {
+    return await admin.findOne({ id: update.from.id }).then(async (isadmin) => {
+        if (isadmin) {
             return 'admin'
         }
 
-        if (bar) {
-            return 'user'
-        }
+        await user.findOne({ id: update.from.id }).then(async (isuser) => {
+            if (isuser) {
+                if (isuser.trust) {
+                    return 'user'
+                }
+            }
+        })
 
         return false
-    }
-
-    return undefined
+    })
 }
 
 if (token === undefined) {
@@ -205,4 +176,4 @@ app.listen(80, () => {
     console.log('Example app listening on port 80!')
 })
 
-export { participant, channels, insertOrUpdate, new_admin, is_user, send_connect }
+export { participant, channels, insertOrUpdate, new_admin, is_user, inbox }
