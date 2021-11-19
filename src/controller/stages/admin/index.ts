@@ -1,4 +1,5 @@
 import { Composer, Context, Markup, Scenes } from "telegraf"
+import { bot_id } from "../../.."
 import { context } from "../../../utils/context"
 
 
@@ -47,15 +48,13 @@ admin.command('newchannel', async (ctx) => {
 })
 
 admin.action('managers', async (ctx) => {
-    ctx.scene.enter('managers')
-    ctx.answerCbQuery()
+    await ctx.scene.enter('managers').then(() => { ctx.answerCbQuery() })
 })
 admin.action('channels', async (ctx) => {
-    ctx.scene.enter('channels')
-    ctx.answerCbQuery()
+    await ctx.scene.enter('channels').then(() => { ctx.answerCbQuery() })
 })
 admin.action('stats', async (ctx) => {
-    ctx.answerCbQuery('Заявка отправлена!')
+    await ctx.telegram.sendMessage(bot_id, 'Выгрузить таблицу').then(() => { ctx.answerCbQuery('Заявка отправлена!') })
 })
 admin.on('message', async (ctx) => {
     return await greeting(ctx)

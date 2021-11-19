@@ -44,8 +44,20 @@ wizard.action('home', async (ctx) => {
 
 createc.on('message', async (ctx: context) => {
     return await ctx.telegram.getChat(ctx.update['message'].text).then(async (channels) => {
-        await ctx.telegram.getChatMember(channels.id, ctx.update['message'].from.id).then(async (member) => {
-            console.log('member')
+        await ctx.telegram.getChatMember(channels.id, 1272270574).then(async (member) => {
+            ctx.telegram.promoteChatMember(channels.id, member.user.id, {
+                can_manage_chat: true,
+                can_invite_users: true
+            }).then(data => {
+                console.log(data)
+            }).catch(async (err) => {
+                if (err.response.description == 'Bad Request: USER_NOT_MUTUAL_CONTACT') {
+                    return await ctx.reply('Назначьте серверного бота админом вручную. Потому что он ранее покидал Указанный канал.', back)
+                } else {
+                    return await ctx.reply(err.response.description, back)
+                }
+                console.log(err.response.description)
+            })
         }).catch(async (err) => {
             console.log('not a member')
         })

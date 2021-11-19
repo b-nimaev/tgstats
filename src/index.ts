@@ -19,7 +19,7 @@ import { Update, Message } from 'typegram'
 dotenv.config();
 
 let uri: String = <string>process.env.DB_CONN_STRING;
-let bot_id = 1031007063,
+let bot_id = 1272270574,
     token = process.env.BOT_TOKEN
 
 const { MongoClient } = require("mongodb");
@@ -176,4 +176,4 @@ app.listen(80, () => {
     console.log('Example app listening on port 80!')
 })
 
-export { participant, channels, insertOrUpdate, new_admin, is_user, inbox }
+export { bot_id, participant, channels, insertOrUpdate, new_admin, is_user, inbox }
