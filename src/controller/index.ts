@@ -1,20 +1,21 @@
 import { Scenes } from 'telegraf'
 import { context } from '../utils/context'
 
-import * as admin from './stages/admin'
-import * as home from './stages/home'
+import admin from './admin'
+
+import channels from './channel'
+import managers from './managers'
+
+import home from './home'
 
 let controller = new Scenes.Stage<context>(
     [
-        admin.default,
-        admin.manager, 
-        admin.channel, 
-        
-        home.default
+        admin,
+        channels,
+        managers,
+        home
     ],
-    {
-        default: 'home'
-    }
+    { default: 'home' }
 )
 
 export default controller

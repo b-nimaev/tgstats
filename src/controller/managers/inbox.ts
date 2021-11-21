@@ -1,5 +1,5 @@
 import * as dotenv from 'dotenv'
-import { context } from '../../../../../utils/context';
+import { context } from '../../utils/context';
 dotenv.config();
 
 let uri: String = <string>process.env.DB_CONN_STRING;

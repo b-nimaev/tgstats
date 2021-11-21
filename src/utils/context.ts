@@ -23,3 +23,7 @@ export interface context extends Context {
     // declare wizard type
     wizard: Scenes.WizardContextWizard<context>
 }
+
+export interface chat extends Chat.ChannelGetChat {
+
+}

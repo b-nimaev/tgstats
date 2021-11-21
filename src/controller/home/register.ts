@@ -2,27 +2,9 @@ import * as dotenv from 'dotenv'
 dotenv.config();
 
 let uri: string = <string>process.env.DB_CONN_STRING;
-
-/*
-export default async function (ctx: context) {
-    await client.connect()
-    let collection = await client.db("tgstats").collection("users")
-    return await collection.findOne({ id: ctx.update['callback_query'].from.id }).then(async (isuser) => {
-        
-        if (isuser) {
-            if (isuser.trust) {
-                return true
-            }
-        }
-
-        await collection.insertOne(ctx.update['callback_query'].from.id)
-    })
-}
-*/
-
 import { MongoClient } from "mongodb";
 import { User } from 'typegram';
-import { context } from '../../../utils/context';
+import { context } from '../../utils/context';
 interface user extends User {
     trust?: boolean
 }

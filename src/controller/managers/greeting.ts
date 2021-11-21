@@ -1,5 +1,5 @@
 import * as dotenv from 'dotenv'
-import { context } from '../../../../../utils/context';
+import { context } from '../../utils/context';
 dotenv.config();
 
 let uri: String = <string>process.env.DB_CONN_STRING;
@@ -43,8 +43,8 @@ export default async function (ctx: context) {
     keyboard.reply_markup.inline_keyboard.push([keys[0], keys[1]],[keys[2], keys[3]])
 
     try {
-        await ctx.editMessageText(text, keyboard)
+        return await ctx.editMessageText(text, keyboard)
     } catch (err) {
-        await ctx.reply(text, keyboard)
+        return await ctx.reply(text, keyboard)
     }
 }
