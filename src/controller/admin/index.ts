@@ -7,11 +7,11 @@ dotenv.config();
 
 async function greeting (ctx: context) {
     try {
-        return await ctx.editMessageText(keyboard.admin.text, keyboard.admin.extra).then(() => {
+        await ctx.editMessageText(keyboard.admin.text, keyboard.admin.extra).then(() => {
             ctx.answerCbQuery()
         })
     } catch (err) {
-        return await ctx.reply(keyboard.admin.text, keyboard.admin.extra)
+        await ctx.reply(keyboard.admin.text, keyboard.admin.extra)
     }
 }
 

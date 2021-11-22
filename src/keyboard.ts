@@ -5,7 +5,7 @@ type MessageT = {
     keyboard: any
 }
 
-let back = { text: '« Назад', callback_data: 'back' }
+let back = { text: '« Назад', callback_data: 'home' }
 let add = { text: 'Добавить', callback_data: 'add' }
 
 export const channel = new class {

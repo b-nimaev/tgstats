@@ -1,18 +1,19 @@
 import * as dotenv from 'dotenv'
 import { Composer, Markup } from 'telegraf';
-import { chat, context } from '../../utils/context';
+import { context } from '../../utils/context';
 
 dotenv.config();
-let single = new Composer<context>()
+let uri = <string>process.env.DB_CONN_STRING;
 
-let uri: String = <string>process.env.DB_CONN_STRING;
-const { MongoClient } = require("mongodb");
+const single = new Composer<context>()
+
+import { MongoClient } from "mongodb";
 const client = new MongoClient(uri);
 
 export async function singleChannel (ctx: context) {
     await client.connect()
     let username = (ctx.update['callback_query']['data'].replace(/link/g, ''))
-    return await client.db("tgstats").collection('channels').findOne({ username: username }).then(async (channels: chat) => {        
+    await client.db("tgstats").collection('channels').findOne({ username: username }).then(async (channels) => {
         let message = `Секция: Канал \n\n`
         message += `<b>Title</b>: <code> ${channels.title}</code>\n`
         message += `<b>Username</b>: <code> @${channels.username}</code>\n`
@@ -23,9 +24,12 @@ export async function singleChannel (ctx: context) {
         let keyboard = Markup.inlineKeyboard([
             [
                 Markup.button.callback('Ссылки', 'links'),
-                Markup.button.callback('⚙️ Настройки', 'settings')
+                Markup.button.callback('Менеджеры', 'managers')
             ],
-            [Markup.button.callback('Назад', 'back')]
+            [
+                Markup.button.callback('« Назад', 'back'),
+                Markup.button.callback('⚙️ Настройки', 'settings')
+            ]
         ])
 
         return await ctx.editMessageText(message, { parse_mode: 'HTML', ...keyboard }).then(async (result) => {
@@ -34,5 +38,21 @@ export async function singleChannel (ctx: context) {
         })
     })
 }
+
+single.action('links', async (ctx) => {
+    ctx.editMessageText('Статистика по ссылкам', Markup.inlineKeyboard([
+        Markup.button.callback('« Назад', 'back')
+    ]))
+})
+single.action('managers', async (ctx) => {
+    ctx.editMessageText('Менеджеры канала!', Markup.inlineKeyboard([
+        Markup.button.callback('« Назад', 'back')
+    ]))
+})
+single.action('links', async (ctx) => {
+    ctx.editMessageText('Настройки канала', Markup.inlineKeyboard([
+        Markup.button.callback('« Назад', 'back')
+    ]))
+})
 
 export default single

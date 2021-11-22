@@ -6,9 +6,8 @@ dotenv.config();
 let single = new Composer<context>()
 import { cancel } from '../../keyboard'
 
-let uri: String = <string>process.env.DB_CONN_STRING;
-const { MongoClient } = require("mongodb");
-const client = new MongoClient(uri);
+import { MongoClient } from "mongodb";
+const client = new MongoClient(<string>process.env.DB_CONN_STRING);
 
 export default async function (ctx: context) {
     if (ctx.update['message']) {
