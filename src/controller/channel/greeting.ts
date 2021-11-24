@@ -1,5 +1,5 @@
 import * as dotenv from 'dotenv'
-import { context } from '../../utils/context';
+import { context } from '../../types';
 
 dotenv.config();
 

@@ -1,14 +1,11 @@
 // Прокси
-import * as localtnl from './utils/serv-loc'
+import * as localtunnel from 'localtunnel'
 import * as express from "express"
 
-const app = express()
-
 // Телеграф
-import { session } from 'telegraf'
-import { Telegraf } from 'telegraf'
-import { context } from "./utils/context"
-import controller from './controller/index'
+import {Telegraf, session } from 'telegraf'
+import { context } from "./types"
+import controller from './controller'
 
 // Переменные окружения
 import * as dotenv from 'dotenv'
@@ -21,17 +18,22 @@ if (token === undefined) {
 }
 
 const bot = new Telegraf<context>(token)
+
 bot.use(session())
 bot.use(controller.middleware())
-const secretPath = `/path/${bot.secretPathComponent()}`;
+
+// Define webhook >> Launch server on 80 port
+const secretPath = `/sq/${bot.secretPathComponent()}`;
 if (process.env.mode === "development") {
-    localtnl.getTunnel().then(url => {
+    localtunnel({ port: 80 }).then(url => {
         bot.telegram.setWebhook(`${url}${secretPath}`)
     })
 } else {
     bot.telegram.setWebhook(`https://tgstat.say-an.ru${secretPath}`)
 }
+
+const app = express()
 app.use(bot.webhookCallback(secretPath))
 app.listen(80, () => {
-    console.log('Example app listening on port 80!')
+    console.log('Telegram bot launched')
 })

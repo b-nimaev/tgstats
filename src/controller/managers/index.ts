@@ -1,5 +1,5 @@
 import { Markup, Composer, Scenes } from "telegraf"
-import { context } from "../../utils/context"
+import { context } from "../../types"
 
 import inbox from './inbox'
 import greeting from './greeting'
@@ -28,9 +28,7 @@ manager.enter(async (ctx: context) => {
 })
 
 manager.action('inbox', async (ctx: context) => { 
-    await inbox(ctx).then(() => {
-        return ctx.wizard.selectStep(1) 
-    })
+    return await inbox(ctx)
 })
 
 manager.action('newmanager', async (ctx: context) => {

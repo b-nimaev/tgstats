@@ -1,5 +1,5 @@
-import { Composer, Markup, Scenes } from "telegraf"
-import { context } from "../../utils/context"
+import { Composer, Scenes } from "telegraf"
+import { context } from "../../types"
 import keyboard from '../../keyboard'
 
 import * as dotenv from 'dotenv'

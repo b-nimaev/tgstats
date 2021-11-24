@@ -1,6 +1,6 @@
 import * as dotenv from 'dotenv'
 import { Composer } from 'telegraf';
-import { context } from '../../utils/context';
+import { context } from '../../types';
 
 dotenv.config();
 let single = new Composer<context>()
