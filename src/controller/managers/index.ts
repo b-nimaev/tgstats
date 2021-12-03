@@ -18,11 +18,7 @@ let single = new Composer<context>()
 
 const manager = new Scenes.WizardScene('managers', handler, inner, invite, single)
 
-handler.on('message', async (ctx) => {
-    return await greeting(ctx).then(() => {
-        ctx.answerCbQuery()
-    })
-})
+handler.on('message', async (ctx) => greeting(ctx))
 manager.enter(async (ctx: context) => {
     return await greeting(ctx)
 })
@@ -46,6 +42,8 @@ manager.action('back', async (ctx: context) => {
         ctx.answerCbQuery()
     })
 })
+
+manager.action('home', async (ctx: context) => ctx.scene.enter('admin'))
 
 manager.action('stats', async (ctx) => {
     return await ctx.answerCbQuery('Заявка отправлена!')

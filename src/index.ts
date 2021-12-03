@@ -20,20 +20,30 @@ if (token === undefined) {
 const bot = new Telegraf<context>(token)
 
 bot.use(session())
-bot.use(controller.middleware())
+bot.use(controller.middleware());
 
-// Define webhook >> Launch server on 80 port
 const secretPath = `/sq/${bot.secretPathComponent()}`;
+
 if (process.env.mode === "development") {
-    localtunnel({ port: 80 }).then(url => {
-        bot.telegram.setWebhook(`${url}${secretPath}`)
+
+    localtunnel({ port: 443 }).then(result => {
+        bot.telegram.setWebhook(`${result.url}${secretPath}`)
     })
+    
 } else {
-    bot.telegram.setWebhook(`https://tgstat.say-an.ru${secretPath}`)
+
+    bot.telegram.setWebhook(`//tgstat.say-an.ru${secretPath}`)
+
 }
 
 const app = express()
+
 app.use(bot.webhookCallback(secretPath))
-app.listen(80, () => {
+
+app.get('/', function(req, res) {
+    res.send('Прочь отсюда')
+})
+
+app.listen(443, () => {
     console.log('Telegram bot launched')
 })

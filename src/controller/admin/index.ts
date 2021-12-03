@@ -15,12 +15,14 @@ async function greeting (ctx: context) {
     }
 }
 
-let handler = new Composer<context>()
-
-// WizardScene
+const handler = new Composer<context>()
 const admin = new Scenes.WizardScene('admin', handler)
 
-admin.enter(async (ctx: context) => greeting(ctx))
+admin.enter(async (ctx: context) => {
+    console.log('Приветствую Админ!')
+
+    await greeting(ctx)
+})
 
 admin.action('managers', async (ctx) => {
     await ctx.scene.enter('managers').then(() => { 
@@ -37,6 +39,10 @@ admin.action('channels', async (ctx) => {
 admin.action('stats', async (ctx) => {
     await ctx.telegram.sendMessage(parseInt(<string>process.env.BOT_ID), 'Выгрузить таблицу')
     await ctx.answerCbQuery()
+})
+
+admin.on("message", async (ctx) => {
+    await greeting(ctx)
 })
 
 export default admin

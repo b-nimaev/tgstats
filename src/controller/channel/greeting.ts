@@ -14,12 +14,14 @@ const client = new MongoClient(uri);
 export async function greeting (ctx: context) {
     return await client.connect().then(async (client) => {
         await client.db("tgstats").collection("channels").find().toArray().then(async (cursor) => {
+
             await channel.list(cursor).then(async (message) => {
-                try {
-                    await ctx.editMessageText(message.text, message.keyboard)
-                } catch (err) {
-                    await ctx.reply(message.text, message.keyboard)
+                if (ctx.message) {
+                    return await ctx.reply(message.text, message.keyboard)
                 }
+                await ctx.editMessageText(message.text, message.keyboard)
+            }).finally(async () => {
+                await client.close()
             })
         })
     }).catch(err => {

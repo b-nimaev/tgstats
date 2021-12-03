@@ -1,6 +1,6 @@
 import * as dotenv from 'dotenv'
 import { Composer, Markup } from 'telegraf';
-import { context } from '../../utils/context';
+import { context } from '../../types';
 
 dotenv.config();
 let uri = <string>process.env.DB_CONN_STRING;
@@ -12,6 +12,11 @@ const client = new MongoClient(uri);
 
 export async function singleChannel (ctx: context) {
     await client.connect()
+
+    if (ctx.message) {
+        await singleChannel(ctx)
+    }
+
     let username = (ctx.update['callback_query']['data'].replace(/link/g, ''))
     await client.db("tgstats").collection('channels').findOne({ username: username }).then(async (channels) => {
         let message = `Секция: Канал \n\n`
@@ -44,15 +49,19 @@ single.action('links', async (ctx) => {
         Markup.button.callback('« Назад', 'back')
     ]))
 })
+
 single.action('managers', async (ctx) => {
     ctx.editMessageText('Менеджеры канала!', Markup.inlineKeyboard([
         Markup.button.callback('« Назад', 'back')
     ]))
 })
+
 single.action('links', async (ctx) => {
     ctx.editMessageText('Настройки канала', Markup.inlineKeyboard([
         Markup.button.callback('« Назад', 'back')
     ]))
 })
+
+single.on("message", async (ctx) => singleChannel(ctx))
 
 export default single
