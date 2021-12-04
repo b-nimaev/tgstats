@@ -7,7 +7,8 @@ interface MyWizardSession extends Scenes.WizardSessionData {
 
 interface MySession extends Scenes.WizardSession<MyWizardSession> {
     mySessionProp: number,
-    channel: Chat.GetChat
+    channel: Chat.GetChat,
+    single: any
 }
 
 export interface context extends Context {

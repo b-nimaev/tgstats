@@ -2,7 +2,9 @@ import { Scenes, Markup, Composer } from "telegraf"
 
 import handler, { greeting } from './greeting'
 import create from './create'
-import single, { singleChannel } from './single'
+import single from './single'
+
+import { channelRender } from "../../services"
 
 const channels = new Scenes.WizardScene('channels',
     handler,
@@ -15,10 +17,8 @@ handler.on('message', async (ctx) => {
 })
 
 channels.action(RegExp('link *', 'g'), async (ctx) => {
-    await singleChannel(ctx).then(() => {
-        ctx.wizard.selectStep(1)
-        ctx.answerCbQuery()
-    })
+    await channelRender(ctx)
+    ctx.wizard.selectStep(1)
 })
 
 channels.action('add', async (ctx) => {

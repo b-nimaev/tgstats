@@ -44,24 +44,24 @@ export const checkUser = async function (ctx: context) {
         
         await client.connect();
         
-        let user = await client.db("tgstats").collection("users").findOne({ id: ctx.message.from.id })
-        
-        if (user) {
-            if (user.trust) {
-                return ctx.scene.enter("user")
-            } else {
-                return ctx.reply("Ваша заявка на рассмотрении, ожидайте")
-            }
-        }
-
-        await client.db("tgstats").collection("admins").findOne({ id: ctx.message.from.id }).then((result) => {
+        await client.db("tgstats").collection("admins").findOne({ id: ctx.message.from.id }).then(async (result) => {
             if (result) {
                 return ctx.scene.enter("admin")
+            } else {
+                await client.db("tgstats").collection("users").findOne({ id: ctx.message.from.id }).then(async (doc) => {
+                    if (doc) {
+                        if (doc.trust) {
+                            return ctx.scene.enter("user")
+                        } else {
+                            await client.db("tgstats").collection("users").insertOne(ctx.message.from).then(() => {
+                                ctx.reply("Ваша заявка на рассмотрении, ожидайте")
+                            }, err => {
+                                ctx.reply("Вышла ошибочка")
+                            })
+                        }
+                    }
+                })
             }
-        })
-        
-        await client.db("tgstats").collection("users").insertOne(ctx.message.from).then(async () => {
-            ctx.reply('Ваша заявка отправлена администрации бота. Ждите решения.')
         })
         
     } finally {
@@ -115,4 +115,45 @@ export async function getUsers () {
 
         return keyboardOnSceneOfUsers
     })
+}
+
+export const channelRender = async function (ctx: context) {
+
+    let chat: any
+
+    if (ctx.message) {
+        chat = ctx.session.single
+    } else {
+        if (!ctx.session.single) {
+            chat = await ctx.telegram.getChat("@" + ctx.update['callback_query']['data'].replace(/link/g, ''))
+        }
+    }
+
+    ctx.session.single = chat
+    
+    let message = `Секция: Канал \n\n`
+
+    message += `<b>Title</b>: <code> ${chat['title']}</code>\n`
+    message += `<b>Username</b>: <code> @${chat['username']}</code>\n`
+    message += `<b>ID</b>: <code> ${chat.id}</code>\n`
+    message += `<b>Description</b>: <code> ${chat['description']}</code>`
+
+    let keyboard = Markup.inlineKeyboard([
+        [
+            Markup.button.callback('Ссылки', 'links'),
+            Markup.button.callback('Менеджеры', 'managers')
+        ],
+        [
+            Markup.button.callback('« Назад', 'back'),
+            Markup.button.callback('⚙️ Настройки', 'settings')
+        ]
+    ])
+
+    if (ctx.message) {
+        ctx.reply(message, { parse_mode: 'HTML', ...keyboard })
+    } else {
+        ctx.editMessageText(message, { parse_mode: 'HTML', ...keyboard })
+        ctx.answerCbQuery()
+    }
+
 }
