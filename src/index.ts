@@ -25,15 +25,11 @@ bot.use(controller.middleware());
 const secretPath = `/sq/${bot.secretPathComponent()}`;
 
 if (process.env.mode === "development") {
-
     localtunnel({ port: 443 }).then(result => {
         bot.telegram.setWebhook(`${result.url}${secretPath}`)
     })
-    
 } else {
-
     bot.telegram.setWebhook(`//tgstat.say-an.ru${secretPath}`)
-
 }
 
 const app = express()
@@ -42,6 +38,7 @@ app.use(bot.webhookCallback(secretPath))
 
 app.get('/', function(req, res) {
     res.send('Прочь отсюда')
+    console.log('con')
 })
 
 app.listen(443, () => {

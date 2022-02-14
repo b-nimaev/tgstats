@@ -1,7 +1,0 @@
-// home
-
-// admin
-
-// manager
-
-// common

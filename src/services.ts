@@ -2,73 +2,30 @@ import { Db, MongoClient } from "mongodb"
 import { config } from "dotenv"
 import { Markup } from "telegraf"
 
-import { context } from "../types"
+import { context } from "./types"
 import { Chat } from "telegraf/typings/core/types/typegram"
-import { text } from "stream/consumers"
 
 config()
 
 let uri = <string>process.env.DB_CONN_STRING
-let keys = {
-    'back': { text: '« Назад', callback_data: 'back' },
-    'inbox': { text: `Входящие`, callback_data: 'inbox' },
-    'newmanager': { text: 'Добавить менеджера', callback_data: 'newmanager' },
-    'stats': { text: 'Статистика', callback_data: 'stats' },
-}
 
-let back = Markup.inlineKeyboard([
-    Markup.button.callback('Назад', 'back')
-])
-
+// Создание ссылки на подлючение
 const client = new MongoClient(uri)
 
-export const connect = async () => {
+const connect = async () => {
 
     let client = new MongoClient(uri)
     
     try {
 
         return await client.connect().then((connection) => { return connection.db("tgstats") })
-    
+
     } catch (err) {
-        // return err
         console.log(err)
         return err
     }
-
 }
 
-export const checkUser = async function (ctx: context) {
-
-    try {
-        
-        await client.connect();
-        
-        await client.db("tgstats").collection("admins").findOne({ id: ctx.message.from.id }).then(async (result) => {
-            if (result) {
-                return ctx.scene.enter("admin")
-            } else {
-                await client.db("tgstats").collection("users").findOne({ id: ctx.message.from.id }).then(async (doc) => {
-                    if (doc) {
-                        if (doc.trust) {
-                            return ctx.scene.enter("user")
-                        } else {
-                            await client.db("tgstats").collection("users").insertOne(ctx.message.from).then(() => {
-                                ctx.reply("Ваша заявка на рассмотрении, ожидайте")
-                            }, err => {
-                                ctx.reply("Вышла ошибочка")
-                            })
-                        }
-                    }
-                })
-            }
-        })
-        
-    } finally {
-        // Ensures that the client will close when you finish/error
-        await client.close();
-    }
-}
 
 const upsertChannel = async (channel: Chat.ChannelGetChat) => {
     try {
@@ -91,6 +48,13 @@ const upsertChannel = async (channel: Chat.ChannelGetChat) => {
 }
 
 export async function getUsers () {
+
+    let keys = {
+        'back': { text: '« Назад', callback_data: 'back' },
+        'inbox': { text: `Входящие`, callback_data: 'inbox' },
+        'newmanager': { text: 'Добавить менеджера', callback_data: 'newmanager' },
+        'stats': { text: 'Статистика', callback_data: 'stats' },
+    }
 
     return await connect().then(async (Db: Db) => {
         

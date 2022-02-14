@@ -1,4 +1,4 @@
-import { Scenes, Markup, Composer } from "telegraf"
+import { Scenes, Markup } from "telegraf"
 
 import handler, { greeting } from './greeting'
 import create from './create'
