@@ -1,5 +1,5 @@
 import { Composer, Markup } from 'telegraf';
-import { channelRender } from '../../services';
+import { ChatGet } from '../../services';
 import { context } from '../../types';
 
 const single = new Composer<context>()
@@ -23,7 +23,7 @@ single.action('links', async (ctx) => {
 })
 
 single.on("message", async (ctx) => {
-    await channelRender(ctx)
+    await ChatGet(ctx)
 })
 
 export default single

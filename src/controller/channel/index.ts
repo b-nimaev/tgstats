@@ -4,7 +4,7 @@ import handler, { greeting } from './greeting'
 import create from './create'
 import single from './single'
 
-import { channelRender } from "../../services"
+import { ChatGet } from "../../services"
 
 const channels = new Scenes.WizardScene('channels',
     handler,
@@ -17,7 +17,7 @@ handler.on('message', async (ctx) => {
 })
 
 channels.action(RegExp('link *', 'g'), async (ctx) => {
-    await channelRender(ctx)
+    ChatGet(ctx)
     ctx.wizard.selectStep(1)
 })
 

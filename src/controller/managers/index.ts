@@ -1,8 +1,6 @@
 import { Markup, Composer, Scenes } from "telegraf"
 import { context } from "../../types"
-
-import inbox from './inbox'
-import greeting from './greeting'
+import { GetKeyboardManagersScene } from '../../services'
 
 let handler = new Composer<context>()
 let inner = new Composer<context>()
@@ -17,14 +15,13 @@ let invite = async function (ctx: context) {
 let single = new Composer<context>()
 
 const manager = new Scenes.WizardScene('managers', handler, inner, invite, single)
-
-handler.on('message', async (ctx) => greeting(ctx))
+handler.on('message', async (ctx) => GetKeyboardManagersScene(ctx))
 manager.enter(async (ctx: context) => {
-    return await greeting(ctx)
+    return await GetKeyboardManagersScene(ctx)
 })
 
 manager.action('inbox', async (ctx: context) => { 
-    return await inbox(ctx)
+    
 })
 
 manager.action('newmanager', async (ctx: context) => {
@@ -49,11 +46,10 @@ manager.action('stats', async (ctx) => {
     return await ctx.answerCbQuery('Заявка отправлена!')
 })
 
-inner.on('message', async (ctx) => await inbox(ctx))
 inner.action('back', async (ctx) => {
     await ctx.answerCbQuery()
     ctx.wizard.selectStep(0)
-    return await greeting(ctx)
+    await GetKeyboardManagersScene(ctx)
 })
 
 export default manager
