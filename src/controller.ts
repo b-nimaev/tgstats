@@ -1,11 +1,11 @@
 import { Scenes } from 'telegraf'
-import { context } from '../types'
+import { context } from './types'
 
-import admin from './admin'
+import admin from './controller/admin'
 
-import channels from './channel'
-import managers from './managers'
-import home from './home'
+import channels from './controller/channel'
+import managers from './controller/managers'
+import home from './controller/home'
 
 let controller = new Scenes.Stage<context>(
     [

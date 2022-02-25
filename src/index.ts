@@ -16,6 +16,7 @@ interface MyWizardSession extends Scenes.WizardSessionData {
     myWizardSessionProp: number,
 }
 
+<<<<<<< HEAD
 interface MySession extends Scenes.WizardSession<MyWizardSession> {
     mySessionProp: number,
     channel: Chat.GetChat
@@ -34,6 +35,21 @@ const secretPath: string = `/${bot.secretPathComponent()}/`
 
 if (token === undefined) {
     throw new Error('Токен не действителен')
+=======
+const bot = new Telegraf<context>(token)
+
+bot.use(session())
+bot.use(controller.middleware());
+
+const secretPath = `/sq/${bot.secretPathComponent()}`;
+
+if (process.env.mode === "development") {
+    localtunnel({ port: 443 }).then(result => {
+        bot.telegram.setWebhook(`${result.url}${secretPath}`)
+    })
+} else {
+    bot.telegram.setWebhook(`//tgstat.say-an.ru${secretPath}`)
+>>>>>>> refs/remotes/origin/master
 }
 
 bot.use(session())
@@ -41,6 +57,13 @@ bot.use(controller.middleware());
 
 localtunnel({ port: 443 }).then(result => bot.telegram.setWebhook(`${result.url}${secretPath}`))
 
+<<<<<<< HEAD
+=======
+app.get('/', function(req, res) {
+    res.send('Прочь отсюда')
+    console.log('con')
+})
+>>>>>>> refs/remotes/origin/master
 
 app.use(bot.webhookCallback(secretPath))
 app.get('/', (req, res) => res.send('Прочь отсюда'))
