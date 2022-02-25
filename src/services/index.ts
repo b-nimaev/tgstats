@@ -4,7 +4,6 @@ import { Markup } from "telegraf"
 
 import { context } from "../types"
 import { Chat } from "telegraf/typings/core/types/typegram"
-import { text } from "stream/consumers"
 
 config()
 
@@ -25,11 +24,11 @@ const client = new MongoClient(uri)
 export const connect = async () => {
 
     let client = new MongoClient(uri)
-    
+
     try {
 
         return await client.connect().then((connection) => { return connection.db("tgstats") })
-    
+
     } catch (err) {
         // return err
         console.log(err)
@@ -41,29 +40,30 @@ export const connect = async () => {
 export const checkUser = async function (ctx: context) {
 
     try {
-        
+
         await client.connect();
         
-        let user = await client.db("tgstats").collection("users").findOne({ id: ctx.message.from.id })
-        
-        if (user) {
-            if (user.trust) {
-                return ctx.scene.enter("user")
-            } else {
-                return ctx.reply("Ваша заявка на рассмотрении, ожидайте")
-            }
-        }
+        let db          = client.db("tgstats"),
+            collection  = db.collection("users")
+        await collection.findOne({ id: ctx.message.from.id })
+            .then((result) => {
+                if (result.trust !== false) {
+                    ctx.scene.enter("managers").then(() => ctx.reply('Вы вошли в сцену User'))
+                }
+            }).catch((err) => {
+                console.log(err)
+            })
 
         await client.db("tgstats").collection("admins").findOne({ id: ctx.message.from.id }).then((result) => {
             if (result) {
                 return ctx.scene.enter("admin")
             }
         })
-        
+
         await client.db("tgstats").collection("users").insertOne(ctx.message.from).then(async () => {
             ctx.reply('Ваша заявка отправлена администрации бота. Ждите решения.')
         })
-        
+
     } finally {
         // Ensures that the client will close when you finish/error
         await client.close();
@@ -83,7 +83,7 @@ const upsertChannel = async (channel: Chat.ChannelGetChat) => {
                         return 'Документ создан'
                     })
                 }
-            })       
+            })
         })
     } catch (err) {
         console.log(err)
@@ -93,7 +93,7 @@ const upsertChannel = async (channel: Chat.ChannelGetChat) => {
 export async function getUsers () {
 
     return await connect().then(async (Db: Db) => {
-        
+
         let cursor = await Db.collection("users").find({ trust: true }).toArray()
         let keyboardOnSceneOfUsers = {
             'reply_markup': {

@@ -40,7 +40,7 @@ export const channel = new class {
             }
         }
 
-        
+
         let keys = Message.keyboard.reply_markup.inline_keyboard
         for (let index = 0; index < cursor.length; index++) {
             keys.push([{
@@ -50,7 +50,7 @@ export const channel = new class {
             }])
         }
         keys.push([home, add])
-        
+
         return Message
     }
 }
@@ -66,7 +66,6 @@ export const managers = new class {
             }
         }
 
-        
         let keys = Message.keyboard.reply_markup.inline_keyboard
         for (let index = 0; index < cursor.length; index++) {
             keys.push([{
@@ -76,7 +75,7 @@ export const managers = new class {
             }])
         }
         keys.push([home, add])
-        
+
         return Message
     }
 }

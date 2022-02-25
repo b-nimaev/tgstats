@@ -3,47 +3,45 @@ import * as localtunnel from 'localtunnel'
 import * as express from "express"
 
 // Телеграф
-import {Telegraf, session } from 'telegraf'
-import { context } from "./types"
+import {Telegraf, Context, Scenes, session } from 'telegraf'
+import { Chat } from 'typegram'
 import controller from './controller'
 
 // Переменные окружения
 import * as dotenv from 'dotenv'
 
 dotenv.config();
-let token = process.env.BOT_TOKEN;
+
+interface MyWizardSession extends Scenes.WizardSessionData {
+    myWizardSessionProp: number,
+}
+
+interface MySession extends Scenes.WizardSession<MyWizardSession> {
+    mySessionProp: number,
+    channel: Chat.GetChat
+}
+
+interface context extends Context {
+    session: MySession
+    scene: Scenes.SceneContextScene<context, MyWizardSession>
+    wizard: Scenes.WizardContextWizard<context>
+}
+
+const token = process.env.BOT_TOKEN;
+const bot = new Telegraf<context>(token)
+const app = express()
+const secretPath: string = `/${bot.secretPathComponent()}/`
 
 if (token === undefined) {
     throw new Error('Токен не действителен')
 }
 
-const bot = new Telegraf<context>(token)
-
 bot.use(session())
 bot.use(controller.middleware());
 
-const secretPath = `/sq/${bot.secretPathComponent()}`;
+localtunnel({ port: 443 }).then(result => bot.telegram.setWebhook(`${result.url}${secretPath}`))
 
-if (process.env.mode === "development") {
-
-    localtunnel({ port: 443 }).then(result => {
-        bot.telegram.setWebhook(`${result.url}${secretPath}`)
-    })
-    
-} else {
-
-    bot.telegram.setWebhook(`//tgstat.say-an.ru${secretPath}`)
-
-}
-
-const app = express()
 
 app.use(bot.webhookCallback(secretPath))
-
-app.get('/', function(req, res) {
-    res.send('Прочь отсюда')
-})
-
-app.listen(443, () => {
-    console.log('Telegram bot launched')
-})
+app.get('/', (req, res) => res.send('Прочь отсюда'))
+app.listen(443, () => console.log('Telegram bot launched'))
