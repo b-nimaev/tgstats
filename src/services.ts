@@ -4,7 +4,6 @@ import { Markup } from "telegraf"
 
 import { context } from "./types"
 import { Chat, ChatFromGetChat } from "telegraf/typings/core/types/typegram"
-import { cp } from "fs"
 
 config()
 const dbname = "tgstats"
@@ -189,7 +188,6 @@ async function RegisterUser (ctx: context) {
             ctx.reply('You already exist')
         } else {
             let data = ctx.from
-            data.trust = false
             console.log(data)
             await client.db(dbname).collection(users).insertOne(ctx.from).then(result => {
                 ctx.editMessageText('Your data is recorded \nwait for admin approval')
